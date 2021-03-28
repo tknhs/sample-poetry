@@ -16,10 +16,8 @@ build: ## build docker
 	docker build --pull --target prod -f $(DOCKER_FILE_PATH) -t $(CONTAINER_NAME) .
 build-nc: ## build docker (no-cache)
 	docker build --pull --target prod --no-cache -f $(DOCKER_FILE_PATH) -t $(CONTAINER_NAME) .
-build-test: ## build docker (test image)
+build-test: ## build docker (test/lint image)
 	docker build --pull --target test -f $(DOCKER_FILE_PATH) -t $(CONTAINER_NAME) .
-build-lint: ## build docker (lint image)
-	docker build --pull --target lint -f $(DOCKER_FILE_PATH) -t $(CONTAINER_NAME) .
 
 run: ## run docker
 	docker run -it --rm $(CONTAINER_NAME)
