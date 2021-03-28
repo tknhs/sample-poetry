@@ -1,0 +1,67 @@
+FROM python:3.9-slim AS base
+ENV TZ=Asia/Tokyo \
+    DEBIAN_FRONTEND=noninteractive \
+    # python
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    # pip
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100 \
+    # poetry
+    POETRY_VERSION="1.1.5" \
+    POETRY_HOME="/opt/poetry" \
+    POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_NO_INTERACTION=1 \
+    # path
+    PYSETUP_PATH="/opt/pysetup" \
+    VENV_PATH="/opt/pysetup/.venv"
+ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        curl \
+        unzip \
+        # timezone
+        tzdata \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+FROM base AS builder
+RUN curl -sSL "https://raw.githubusercontent.com/python-poetry/poetry/${POETRY_VERSION}/get-poetry.py" | python
+WORKDIR $PYSETUP_PATH
+COPY poetry.lock pyproject.toml ./
+COPY README.md src ./
+RUN poetry build --format sdist && \
+    tar --wildcards -xvf dist/*-`poetry version -s`.tar.gz -O '*/setup.py' > setup.py && \
+    rm -rf dist
+RUN poetry install --no-dev
+
+FROM base AS develop
+COPY --from=builder $POETRY_HOME $POETRY_HOME
+COPY --from=builder $PYSETUP_PATH $PYSETUP_PATH
+WORKDIR $PYSETUP_PATH
+RUN poetry install
+WORKDIR /app
+COPY . .
+COPY --from=builder $PYSETUP_PATH/setup.py ./src
+RUN pip install -e ./src
+
+## lint
+#FROM develop AS lint
+#RUN poetry run flake8 .
+#RUN poetry run mypy .
+#RUN poetry run isort . --check
+#RUN poetry run black . --check
+
+# test
+FROM develop AS test
+CMD ["poetry", "run", "pytest"]
+
+FROM base AS prod
+COPY --from=builder $VENV_PATH $VENV_PATH
+WORKDIR /app
+COPY . /app
+COPY --from=builder $PYSETUP_PATH/setup.py ./src
+RUN pip install -e ./src
+CMD ["python", "bin/main.py"]
