@@ -1,0 +1,135 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - '**'
+    types: [synchronize, opened]
+
+env:
+  DOCKER_BUILDKIT: 1
+  IMAGE_NAME: sample-poetry
+  DOCKER_FILE_PATH: docker/Dockerfile
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache image
+      uses: actions/cache@v2
+      with:
+        path: /tmp/docker-save
+        key: docker-save-${{ github.sha }}
+
+    - name: Build image
+      run: docker build --target test -f ${DOCKER_FILE_PATH} -t ${IMAGE_NAME} .
+
+    - name: Save image
+      run: mkdir -p /tmp/docker-save
+        && docker tag ${IMAGE_NAME} ${IMAGE_NAME}-cache
+        && docker save ${IMAGE_NAME}-cache -o /tmp/docker-save/snapshot.tar
+        && ls -lh /tmp/docker-save || true
+
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache docker image
+      uses: actions/cache@v2
+      with:
+        path: /tmp/docker-save
+        key: docker-save-${{ github.sha }}
+
+    - name: Load docker image
+      run: docker load -i /tmp/docker-save/snapshot.tar
+
+    - name: Run pytest
+      run: docker run --rm ${IMAGE_NAME}-cache poetry run pytest
+
+  flake8:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache docker image
+      uses: actions/cache@v2
+      with:
+        path: /tmp/docker-save
+        key: docker-save-${{ github.sha }}
+
+    - name: Load docker image
+      run: docker load -i /tmp/docker-save/snapshot.tar
+
+    - name: Run flake8
+      run: docker run --rm ${IMAGE_NAME}-cache poetry run flake8 .
+
+  black:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache docker image
+      uses: actions/cache@v2
+      with:
+        path: /tmp/docker-save
+        key: docker-save-${{ github.sha }}
+
+    - name: Load docker image
+      run: docker load -i /tmp/docker-save/snapshot.tar
+
+    - name: Run black
+      run: docker run --rm ${IMAGE_NAME}-cache poetry run black . --check --diff
+
+  isort:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache docker image
+      uses: actions/cache@v2
+      with:
+        path: /tmp/docker-save
+        key: docker-save-${{ github.sha }}
+
+    - name: Load docker image
+      run: docker load -i /tmp/docker-save/snapshot.tar
+
+    - name: Run isort
+      run: docker run --rm ${IMAGE_NAME}-cache poetry run isort . --check --diff
+
+  mypy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache docker image
+      uses: actions/cache@v2
+      with:
+        path: /tmp/docker-save
+        key: docker-save-${{ github.sha }}
+
+    - name: Load docker image
+      run: docker load -i /tmp/docker-save/snapshot.tar
+
+    - name: Run mypy
+      run: docker run --rm ${IMAGE_NAME}-cache poetry run mypy .

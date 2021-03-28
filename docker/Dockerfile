@@ -47,14 +47,7 @@ COPY . .
 COPY --from=builder $PYSETUP_PATH/setup.py ./src
 RUN pip install -e ./src
 
-## lint
-#FROM develop AS lint
-#RUN poetry run flake8 .
-#RUN poetry run mypy .
-#RUN poetry run isort . --check
-#RUN poetry run black . --check
-
-# test
+# test/lint
 FROM develop AS test
 CMD ["poetry", "run", "pytest"]
 
