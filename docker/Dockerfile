@@ -21,7 +21,6 @@ RUN apt-get update && \
     apt-get install --no-install-recommends -y \
         curl \
         unzip \
-        # timezone
         tzdata \
         && \
     apt-get clean && \
@@ -37,7 +36,7 @@ RUN poetry build --format sdist && \
     rm -rf dist
 RUN poetry install --no-dev
 
-FROM base AS develop
+FROM base AS dev
 COPY --from=builder $POETRY_HOME $POETRY_HOME
 COPY --from=builder $PYSETUP_PATH $PYSETUP_PATH
 WORKDIR $PYSETUP_PATH
@@ -47,14 +46,10 @@ COPY . .
 COPY --from=builder $PYSETUP_PATH/setup.py ./src
 RUN pip install -e ./src
 
-# test/lint
-FROM develop AS test
-CMD ["poetry", "run", "pytest"]
-
 FROM base AS prod
 COPY --from=builder $VENV_PATH $VENV_PATH
 WORKDIR /app
-COPY . /app
+COPY . .
 COPY --from=builder $PYSETUP_PATH/setup.py ./src
 RUN pip install -e ./src
 CMD ["python", "bin/main.py"]

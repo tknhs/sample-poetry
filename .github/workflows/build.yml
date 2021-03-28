@@ -26,7 +26,7 @@ jobs:
         key: docker-save-${{ github.sha }}
 
     - name: Build image
-      run: docker build --target test -f ${DOCKER_FILE_PATH} -t ${IMAGE_NAME} .
+      run: docker build --target dev -f ${DOCKER_FILE_PATH} -t ${IMAGE_NAME} .
 
     - name: Save image
       run: mkdir -p /tmp/docker-save
