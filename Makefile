@@ -16,13 +16,30 @@ build: ## build docker
 	docker build --pull --target prod -f $(DOCKER_FILE_PATH) -t $(CONTAINER_NAME) .
 build-nc: ## build docker (no-cache)
 	docker build --pull --target prod --no-cache -f $(DOCKER_FILE_PATH) -t $(CONTAINER_NAME) .
-build-test: ## build docker (test/lint image)
-	docker build --pull --target test -f $(DOCKER_FILE_PATH) -t $(CONTAINER_NAME) .
+build-dev: ## build docker (test/lint image)
+	docker build --pull --target dev -f $(DOCKER_FILE_PATH) -t $(CONTAINER_NAME) .
 
 run: ## run docker
 	docker run -it --rm $(CONTAINER_NAME)
 run-local: ## run docker (mount local dir)
 	docker run -it --rm -v $(PWD):/app $(CONTAINER_NAME)
+
+test: build-dev ## run test
+	docker run --rm $(CONTAINER_NAME) poetry run pytest
+
+lint: build-dev ## run lint
+	@make run-isort
+	@make run-black
+	@make run-flake8
+	@make run-mypy
+lint-isort:
+	docker run --rm $(CONTAINER_NAME) poetry run isort . --check --diff
+lint-black:
+	docker run --rm $(CONTAINER_NAME) poetry run black . --check --diff
+lint-flake8:
+	docker run --rm $(CONTAINER_NAME) poetry run flake8 .
+lint-mypy:
+	docker run --rm $(CONTAINER_NAME) poetry run mypy .
 
 clean: ## clean images/containers
 	-@make clean-images

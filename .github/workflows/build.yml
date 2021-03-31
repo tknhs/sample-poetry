@@ -34,7 +34,7 @@ jobs:
         && docker save ${IMAGE_NAME}-cache -o /tmp/docker-save/snapshot.tar
         && ls -lh /tmp/docker-save || true
 
-  tests:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: build
@@ -52,7 +52,14 @@ jobs:
       run: docker load -i /tmp/docker-save/snapshot.tar
 
     - name: Run pytest
-      run: docker run --rm ${IMAGE_NAME}-cache poetry run pytest
+      run: docker run -v $(pwd)/tests/test-reports:/app/tests/test-reports --rm ${IMAGE_NAME}-cache poetry run pytest
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v1
+      if: always()
+      with:
+        files: tests/test-reports/*.xml
+        comment_on_pr: false
 
   flake8:
     runs-on: ubuntu-latest
