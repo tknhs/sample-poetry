@@ -14,6 +14,11 @@ class TestAnimal:
         c = animal.Cat()
         assert c.say() == "Meow"
 
-    def test_cat_2(self):
+    def test_mock_cat(self, mocker):
         c = animal.Cat()
-        assert c.say() == "Hello"
+
+        def mock_say(self):
+            return "hello"
+
+        mocker.patch("sample_poetry.animal.Cat.say", mock_say)
+        assert c.say() == "hello"
