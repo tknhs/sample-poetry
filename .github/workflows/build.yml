@@ -34,7 +34,7 @@ jobs:
         && docker save ${IMAGE_NAME}-cache -o /tmp/docker-save/snapshot.tar
         && ls -lh /tmp/docker-save || true
 
-  tests:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: build
