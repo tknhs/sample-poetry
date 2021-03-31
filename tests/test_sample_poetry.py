@@ -13,3 +13,7 @@ class TestAnimal:
     def test_cat(self):
         c = animal.Cat()
         assert c.say() == "Meow"
+
+    def test_cat_2(self):
+        c = animal.Cat()
+        assert c.say() == "Hello"
