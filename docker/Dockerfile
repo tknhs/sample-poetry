@@ -15,7 +15,8 @@ ENV TZ=Asia/Tokyo \
     POETRY_NO_INTERACTION=1 \
     # path
     PYSETUP_PATH="/opt/pysetup" \
-    VENV_PATH="/opt/pysetup/.venv"
+    VENV_PATH="/opt/pysetup/.venv" \
+    MY_MODULE_PATH="/app/src"
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
@@ -30,11 +31,8 @@ FROM base AS builder
 RUN curl -sSL "https://raw.githubusercontent.com/python-poetry/poetry/${POETRY_VERSION}/get-poetry.py" | python
 WORKDIR $PYSETUP_PATH
 COPY poetry.lock pyproject.toml ./
-COPY README.md src ./
-RUN poetry build --format sdist && \
-    tar --wildcards -xvf dist/*-`poetry version -s`.tar.gz -O '*/setup.py' > setup.py && \
-    rm -rf dist
 RUN poetry install --no-dev
+RUN echo $MY_MODULE_PATH > $(python -c 'import sys; print(sys.path)' | grep -o "[^']*site-packages")/my_module.pth
 
 FROM base AS dev
 COPY --from=builder $POETRY_HOME $POETRY_HOME
@@ -43,13 +41,9 @@ WORKDIR $PYSETUP_PATH
 RUN poetry install
 WORKDIR /app
 COPY . .
-COPY --from=builder $PYSETUP_PATH/setup.py ./src
-RUN pip install -e ./src
 
 FROM base AS prod
 COPY --from=builder $VENV_PATH $VENV_PATH
 WORKDIR /app
 COPY . .
-COPY --from=builder $PYSETUP_PATH/setup.py ./src
-RUN pip install -e ./src
 CMD ["python", "bin/main.py"]

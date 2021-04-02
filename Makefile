@@ -26,6 +26,8 @@ run-local: ## run docker (mount local dir)
 
 test: build-dev ## run test
 	docker run --rm $(CONTAINER_NAME) poetry run pytest
+test-local: build-dev ## run test (mount local dir)
+	docker run --rm -v $(PWD):/app $(CONTAINER_NAME) poetry run pytest
 
 lint: build-dev ## run lint
 	@make run-isort
