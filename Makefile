@@ -30,10 +30,10 @@ test-local: build-dev ## run test (mount local dir)
 	docker run --rm -v $(PWD):/app $(CONTAINER_NAME) poetry run pytest
 
 lint: build-dev ## run lint
-	@make run-isort
-	@make run-black
-	@make run-flake8
-	@make run-mypy
+	@make lint-isort
+	@make lint-black
+	@make lint-flake8
+	@make lint-mypy
 lint-isort:
 	docker run --rm $(CONTAINER_NAME) poetry run isort . --check --diff
 lint-black:
