@@ -59,7 +59,7 @@ jobs:
       if: always()
       with:
         files: tests/test-reports/*.xml
-        comment_on_pr: false
+        comment_mode: 'update last'
 
   flake8:
     runs-on: ubuntu-latest
